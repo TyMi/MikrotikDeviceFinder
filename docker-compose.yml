@@ -1,0 +1,17 @@
+services:
+  mikrotik-devicefinder:
+    build: .
+    container_name: mikrotik-devicefinder
+    restart: unless-stopped
+    # network_mode host, App bindet strikt auf 127.0.0.1 - nur ueber einen
+    # vorgelagerten Reverse-Proxy (siehe examples/reverse-proxy.Caddyfile.example)
+    # von aussen erreichbar, nicht direkt.
+    network_mode: host
+    command: ["uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8090"]
+    environment:
+      - TZ=Europe/Berlin
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro

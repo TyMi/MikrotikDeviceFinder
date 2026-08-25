@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WLAN-Client-Uebersicht</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>WLAN-Client-Uebersicht</h1>
+    <div class="topbar-actions">
+      <label class="control">
+        Zeitraum
+        <select id="window-select">
+          <option value="1h">1h</option>
+          <option value="6h">6h</option>
+          <option value="24h" selected>24h</option>
+          <option value="7d">7 Tage</option>
+          <option value="30d">30 Tage</option>
+        </select>
+      </label>
+      <label class="control checkbox">
+        <input type="checkbox" id="inactive-toggle" checked />
+        inaktive Geraete
+      </label>
+      <div class="ssid-filter">
+        <button id="ssid-filter-btn">SSIDs: alle</button>
+        <div id="ssid-filter-panel" class="ssid-filter-panel hidden">
+          <div class="ssid-filter-actions">
+            <button id="ssid-filter-all" type="button">Alle</button>
+            <button id="ssid-filter-none" type="button">Keine</button>
+          </div>
+          <div id="ssid-filter-options"></div>
+        </div>
+      </div>
+      <button id="search-toggle-btn">Suche</button>
+      <span id="status" class="status">lade...</span>
+      <button id="refresh-btn">Aktualisieren</button>
+    </div>
+  </header>
+
+  <section id="search-panel" class="search-panel hidden">
+    <div class="search-controls">
+      <input type="text" id="search-input" placeholder="Name, Hostname oder MAC..." />
+      <select id="search-window-select">
+        <option value="1h">1h</option>
+        <option value="6h">6h</option>
+        <option value="24h">24h</option>
+        <option value="7d" selected>7 Tage</option>
+        <option value="30d">30 Tage</option>
+      </select>
+      <button id="search-btn">Suchen</button>
+    </div>
+    <div id="search-results"></div>
+  </section>
+
+  <main id="content">
+    <p class="loading">Lade Daten...</p>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

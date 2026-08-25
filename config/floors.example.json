@@ -1,0 +1,14 @@
+{
+  "floors": [
+    {"floor": "1F", "label": "First Floor", "order": 0},
+    {"floor": "GF", "label": "Ground Floor", "order": 1},
+    {"floor": "BF", "label": "Basement", "order": 2}
+  ],
+  "access_points": {
+    "ap-first": {"floor": "1F", "label": "First Floor (Main AP)"},
+    "ap-ground": {"floor": "GF", "label": "Ground Floor (Main AP)"},
+    "ap-office": {"floor": "GF", "label": "Office"},
+    "ap-garage": {"floor": "GF", "label": "Garage"},
+    "ap-basement": {"floor": "BF", "label": "Basement"}
+  }
+}

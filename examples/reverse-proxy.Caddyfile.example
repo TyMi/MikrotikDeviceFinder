@@ -1,0 +1,11 @@
+# Example Caddy site config for putting MikrotikDeviceFinder behind a
+# reverse proxy that terminates TLS. Adjust the IP/port to your own setup.
+#
+# Assumes the app container binds only to 127.0.0.1 on its host (see
+# docker-compose.yml: --host 127.0.0.1 --port 8090) so it is not reachable
+# directly from the LAN, only through this proxy.
+
+192.0.2.18:8444 {
+	tls internal
+	reverse_proxy localhost:8090
+}
