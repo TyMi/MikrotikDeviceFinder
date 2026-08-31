@@ -1,5 +1,7 @@
 # MikrotikDeviceFinder
 
+![Built with AI](https://img.shields.io/badge/Built_with-AI-success)
+
 A small self-hosted web app that shows, across a fleet of MikroTik CAPsMAN
 access points, which WLAN clients are currently (and historically) connected
 to which access point and SSID - grouped by floor.
