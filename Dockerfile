@@ -7,16 +7,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends tzdata && \
 
 WORKDIR /app
 
-# mac-vendor-lookup schreibt seinen Cache nach ~/.cache/mac-vendors.txt und
-# legt das Verzeichnis dabei nicht zuverlaessig selbst an (FileNotFoundError
-# im leeren Container-Image) - daher hier vorab anlegen.
-RUN mkdir -p /root/.cache
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-EXPOSE 8000
+# Nicht als root laufen. /app/data ist der Mountpoint fuer das persistente
+# Volume (SQLite-DB) - der App-User braucht dort Schreibrechte, daher schon
+# hier anlegen und chown-en, bevor auf den unprivilegierten User gewechselt
+# wird. HOME/XDG_CACHE_HOME zeigen bewusst in dieses Volume, damit der
+# mac-vendor-lookup-Cache (~/.cache/mac-vendors.txt) persistiert statt bei
+# jedem Container-Rebuild verloren zu gehen (statt des frueheren
+# /root/.cache-Workarounds).
+RUN useradd -r -u 10001 app && mkdir -p /app/data && chown app /app/data
+ENV HOME=/app/data XDG_CACHE_HOME=/app/data/.cache
+USER app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8090
+
+CMD ["uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8090"]

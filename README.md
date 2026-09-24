@@ -74,11 +74,13 @@ DHCP server (leases API)       ──┘
 | --- | --- | --- |
 | `MIKROTIK_HOST` | IP of the CAPsMAN controller | `192.0.2.31` |
 | `MIKROTIK_USER` / `MIKROTIK_PASSWORD` | Read-only API user (see `router/create_capsman_api_user.rsc`) | - |
-| `MIKROTIK_VERIFY_TLS` | Verify the router's TLS cert (usually self-signed → `false`) | `false` |
+| `MIKROTIK_VERIFY_TLS` | Verify the router's TLS cert | `false` (self-signed is the norm for `router/create_capsman_api_user.rsc`) |
+| `MIKROTIK_CA_FILE` | Path to a CA cert to pin instead of disabling verification (e.g. the CA the router script generates) | unset |
 | `OPNSENSE_HOST` | IP of your OPNsense box | `192.0.2.1` |
-| `OPNSENSE_SCHEME` | `http` or `https` | `http` |
-| `OPNSENSE_API_KEY` / `OPNSENSE_API_SECRET` | dnsmasq leases API user | - |
-| `OPNSENSE_VERIFY_TLS` | Verify OPNsense's TLS cert | `false` |
+| `OPNSENSE_SCHEME` | `http` or `https` | `https` |
+| `OPNSENSE_API_KEY` / `OPNSENSE_API_SECRET` | dnsmasq leases API user — this credential has write-adjacent privileges (see below), keep it off plain HTTP | - |
+| `OPNSENSE_VERIFY_TLS` | Verify OPNsense's TLS cert | `true` |
+| `OPNSENSE_CA_FILE` | Path to a CA cert to pin instead of disabling verification | unset |
 | `POLL_INTERVAL_SECONDS` | Seconds between polls | `30` |
 | `ROAMING_TOLERANCE_SECONDS` | See above | `75` |
 | `RETENTION_DAYS` | See above | `30` |
@@ -141,6 +143,24 @@ docker compose up -d
   `docker-compose.yml`) so timestamps are correct without extra effort for
   the author's own deployment - change the `TZ` build arg/environment
   variable to your own timezone (or `UTC`) if you deploy this elsewhere.
+- **Runs as a non-root user (UID 10001), with `read_only: true`,
+  `cap_drop: [ALL]` and `no-new-privileges` set.** Before the first start,
+  create the `./data` directory and make sure it's writable by that UID -
+  otherwise the container starts but every write to the SQLite DB fails:
+
+  ```bash
+  mkdir -p data
+  sudo chown 10001:10001 data
+  ```
+
+  (On an existing deployment that previously ran as root, re-chown the
+  directory and its `history.db` the same way after upgrading.)
+- `network_mode: host` is used by default so the app is reachable at
+  `localhost:8090` for a reverse proxy that itself uses host networking
+  (see `examples/reverse-proxy.Caddyfile.example`). If you don't have a
+  setup like that, a regular bridge network with
+  `ports: ["127.0.0.1:8090:8090"]` isolates better and works just as well
+  for a reverse proxy running in its own container on a shared network.
 
 ## MikroTik / OPNsense prerequisites
 
@@ -155,6 +175,14 @@ docker compose up -d
   key/secret for it. Endpoint used: `/api/dnsmasq/leases/search`.
 - If you use a different DHCP backend, you'll need to write your own
   equivalent of `app/hostnames.py`.
+- **TLS verification and `*_HOST` as an IP address don't mix**: if
+  `OPNSENSE_HOST`/`MIKROTIK_HOST` is a bare IP and the certificate was
+  issued for a hostname (e.g. a real Let's Encrypt cert via DNS-01), TLS
+  verification will fail with an IP/hostname mismatch even though the
+  certificate itself is perfectly valid - this isn't a bug, it's how
+  certificate validation works. Either point the `*_HOST` setting at a
+  hostname covered by the certificate's SAN, or accept `*_VERIFY_TLS=false`
+  for that connection.
 
 ## Known limitations
 

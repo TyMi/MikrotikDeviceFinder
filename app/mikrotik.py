@@ -1,6 +1,7 @@
 import httpx
 
 from app.config import settings
+from app.tls import verify_arg
 
 
 class MikrotikClient:
@@ -9,7 +10,8 @@ class MikrotikClient:
         self._auth = (settings.mikrotik_user, settings.mikrotik_password)
 
     async def _get(self, path: str) -> list | dict:
-        async with httpx.AsyncClient(verify=settings.mikrotik_verify_tls, timeout=10) as client:
+        verify = verify_arg(settings.mikrotik_verify_tls, settings.mikrotik_ca_file)
+        async with httpx.AsyncClient(verify=verify, timeout=10) as client:
             response = await client.get(f"{self._base_url}/{path}", auth=self._auth)
             response.raise_for_status()
             return response.json()

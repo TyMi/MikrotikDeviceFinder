@@ -1,4 +1,5 @@
 import logging
+import os
 
 from mac_vendor_lookup import AsyncMacLookup, VendorNotFoundError
 
@@ -14,6 +15,10 @@ async def ensure_vendor_db() -> None:
     Vendor-Aufloesung deaktiviert und faellt auf 'Unbekanntes Geraet' zurueck.
     """
     global _ready
+    # Cache-Verzeichnis (~/.cache, HOME zeigt bei uns ins persistente Volume)
+    # existiert bei einem frischen Volume/Container noch nicht - die
+    # Bibliothek legt es nicht zuverlaessig selbst an.
+    os.makedirs(os.path.dirname(AsyncMacLookup.cache_path), exist_ok=True)
     try:
         await _lookup.update_vendors()
         _ready = True

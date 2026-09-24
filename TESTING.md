@@ -52,7 +52,7 @@ interval (`POLL_INTERVAL_SECONDS`, default 30s) means it's working.
 
 ```bash
 curl -u <key>:<secret> \
-  "http://192.0.2.1/api/dnsmasq/leases/search?current=1&rowCount=1000"
+  "https://192.0.2.1/api/dnsmasq/leases/search?current=1&rowCount=1000"
 ```
 
 Expect `{"rows": [...]}` with `hwaddr`, `address`, `hostname` per lease. A
@@ -62,6 +62,14 @@ group is missing the required privilege.
 3.2. In the app's live overview data, confirm at least some devices resolve
 to a real hostname rather than falling back to `<Vendor> (<MAC>)` or the
 raw MAC - see §5.2.
+
+3.3. If `OPNSENSE_VERIFY_TLS=true` (the default) fails with a
+`CERTIFICATE_VERIFY_FAILED`/hostname-mismatch error, check whether
+`OPNSENSE_HOST` is a bare IP - a certificate issued for a hostname will
+never validate against an IP, regardless of `OPNSENSE_CA_FILE`. Either use
+a hostname that's covered by the cert, or set `OPNSENSE_VERIFY_TLS=false`
+for that connection (still fine as long as `OPNSENSE_SCHEME=https`, since
+the traffic is still encrypted, just unauthenticated at the TLS layer).
 
 ## 4. Floors configuration
 
@@ -131,6 +139,18 @@ time-range setting.
 
 ## 7. Docker / production deployment
 
+7.0. The container runs as a non-root user (UID 10001). Before the first
+`docker compose up`, make sure `./data` is writable by that UID:
+
+```bash
+mkdir -p data
+sudo chown 10001:10001 data
+```
+
+Skipping this doesn't crash the container - it starts fine, but every
+poll cycle fails to write to SQLite. Check `docker compose logs` for
+`PermissionError`/`sqlite3.OperationalError` if history never fills up.
+
 7.1. Build and start:
 
 ```bash
@@ -163,6 +183,23 @@ survive:
 docker compose restart
 curl "http://localhost:8000/api/overview?window=30d"   # history still present
 ```
+
+7.5. Confirm the container is actually running hardened, not just
+configured that way:
+
+```bash
+docker inspect <container-name> --format \
+  'User: {{.Config.User}} | ReadonlyRootfs: {{.HostConfig.ReadonlyRootfs}} | CapDrop: {{.HostConfig.CapDrop}}'
+docker exec <container-name> id   # expect uid=10001, not 0/root
+```
+
+7.6. Confirm hostnames survive a DHCP-source outage instead of silently
+falling back to raw MACs/vendor names: temporarily break
+`OPNSENSE_HOST`/credentials (or block the connection), let one poll cycle
+run, and confirm `display_name` values in `/api/overview` are unchanged
+from before - only newly-seen devices should show the vendor/MAC
+fallback. Then restore the config and confirm resolution recovers on the
+next cycle.
 
 ## 8. Regression checklist after changing code/config
 

@@ -7,13 +7,24 @@ class Settings(BaseSettings):
     mikrotik_host: str = "192.0.2.31"
     mikrotik_user: str = "capsman-api"
     mikrotik_password: str = ""
+    # Self-signed CA ist bei MikroTik der Normalfall (siehe
+    # router/create_capsman_api_user.rsc) - Default bleibt deshalb "nicht
+    # pruefen", statt out-of-the-box jede Standard-Installation zu brechen.
+    # Wer die vom Skript erzeugte CA exportiert, kann sie ueber
+    # mikrotik_ca_file pinnen und verify_tls=true setzen.
     mikrotik_verify_tls: bool = False
+    mikrotik_ca_file: str | None = None
 
     opnsense_host: str = "192.0.2.1"
-    opnsense_scheme: str = "http"  # manche Netze blockieren 443 fuer die REST-API; auf https umstellen, falls erreichbar
+    opnsense_scheme: str = "https"
     opnsense_api_key: str = ""
     opnsense_api_secret: str = ""
-    opnsense_verify_tls: bool = False
+    # Default "true": der OPNsense-API-Key traegt schreibnahe Rechte
+    # (Dnsmasq-Settings-Privileg), Zertifikatspruefung sollte daher nicht
+    # standardmaessig abgeschaltet sein. Bei selbstsigniertem Zertifikat
+    # ueber opnsense_ca_file pinnen statt verify_tls=false zu setzen.
+    opnsense_verify_tls: bool = True
+    opnsense_ca_file: str | None = None
 
     poll_interval_seconds: int = 30
     roaming_tolerance_seconds: int = 75

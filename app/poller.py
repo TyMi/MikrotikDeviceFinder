@@ -52,8 +52,14 @@ async def poll_once(now: datetime | None = None) -> None:
     now = now or datetime.now()
     client = MikrotikClient()
     registration_table = await client.get_registration_table()
-    arp_table = await client.get_arp_table()
+    try:
+        arp_table = await client.get_arp_table()
+    except Exception:
+        logger.warning("MikroTik-ARP-Tabelle konnte nicht abgerufen werden, IP-Fallback fuer diesen Zyklus leer.", exc_info=True)
+        arp_table = []
     opnsense_leases = await get_opnsense_leases()
+    lease_ok = opnsense_leases is not None
+    leases = opnsense_leases or {}
     mac_to_ip = {e["mac-address"].upper(): e["address"] for e in arp_table if e.get("mac-address")}
 
     db = await get_db()
@@ -79,13 +85,20 @@ async def poll_once(now: datetime | None = None) -> None:
             floor_label = _UNKNOWN_FLOOR["label"]
             ap_label = interface or "unbekannt"
 
-        lease = opnsense_leases.get(mac, {})
-        hostname = lease.get("hostname")
-        vendor = None if hostname else await lookup_vendor(mac)
+        lease = leases.get(mac, {})
         ip = lease.get("ip") or mac_to_ip.get(mac)
 
         cursor = await db.execute("SELECT * FROM device_state WHERE mac = ?", (mac,))
         row = await cursor.fetchone()
+
+        if row is not None and not lease_ok:
+            # OPNsense-Abruf ist fehlgeschlagen - bestehenden Namen behalten
+            # statt ihn mit einem (dann leeren) Lease-Ergebnis zu ueberschreiben.
+            hostname = row["hostname"]
+            vendor = row["vendor"]
+        else:
+            hostname = lease.get("hostname")
+            vendor = None if hostname else await lookup_vendor(mac)
 
         if row is None:
             await db.execute(
