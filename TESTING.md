@@ -225,3 +225,15 @@ IPs/hostnames/credentials before committing/publishing, e.g.:
 ```bash
 grep -rn "192\.168\." README.md examples/ .env.example
 ```
+
+## Automated tests (CI)
+
+Pure-logic unit tests live in `tests/` and run in CI together with ruff, a
+compile check, a Docker build, `pip-audit`, CodeQL and gitleaks. To run the
+tests locally:
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest
+.venv/bin/ruff check .
+```
