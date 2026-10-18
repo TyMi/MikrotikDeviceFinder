@@ -1,0 +1,16 @@
+# Opens pull requests when pinned dependencies, the base image or the GitHub
+# Actions used in .github/workflows/ have a new release. Free for public repositories.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
